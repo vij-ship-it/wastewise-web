@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Register · WasteWise</title>
+  <link rel="icon" href="/img/logo.svg">
+  <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <div class="container py-4" style="max-width: 560px">
+    <a href="/" class="d-flex align-items-center gap-2 mb-4 text-decoration-none text-body">
+      <img src="/img/logo.svg" width="36" height="36" alt=""><span class="brand fs-5">Waste<span class="text-ww">Wise</span> Web</span>
+    </a>
+
+    <div class="card p-4" id="step1">
+      <div class="small-muted mb-1">Step 1 of 2</div>
+      <h2 class="h4 fw-bold mb-3">Create your account</h2>
+      <form id="detailsForm">
+        <div class="mb-3"><label class="form-label">Full name</label><input class="form-control" name="name" required></div>
+        <div class="mb-3"><label class="form-label">College email</label><input class="form-control" type="email" name="email" placeholder="name@rvce.edu.in" required>
+          <div class="form-text" id="domainHint">Only @rvce.edu.in addresses can register.</div></div>
+        <div class="mb-3"><label class="form-label">Roll number / USN</label><input class="form-control" name="roll_no" placeholder="1RV25CS001" required></div>
+        <div class="mb-3"><label class="form-label">Password</label><input class="form-control" type="password" name="password" minlength="6" required autocomplete="new-password"></div>
+        <div class="alert alert-danger d-none py-2" id="err1"></div>
+        <button class="btn btn-ww w-100 py-2 fw-semibold">Next: scan my face</button>
+      </form>
+      <div class="text-center mt-3 small">Already registered? <a href="/login" class="text-ww">Log in</a></div>
+    </div>
+
+    <div class="card p-4 d-none" id="step2">
+      <div class="small-muted mb-1">Step 2 of 2</div>
+      <h2 class="h4 fw-bold mb-2">Face enrolment</h2>
+      <p class="small-muted">This one-time scan lets the gate scanner recognise you. Only a list of 128 numbers describing your face is stored, never the photo.</p>
+      <div class="cam-wrap mb-3">
+        <video id="video" muted playsinline></video>
+        <canvas id="overlay"></canvas>
+        <div class="cam-msg" id="camMsg">Loading face models…</div>
+      </div>
+      <div class="progress mb-3" style="height: 8px"><div class="progress-bar bg-success" id="bar" style="width: 0%"></div></div>
+      <div class="alert alert-danger d-none py-2" id="err2"></div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-ww flex-fill py-2 fw-semibold" id="captureBtn" disabled>Start face scan</button>
+        <button class="btn btn-outline-secondary" id="skipBtn" title="You can enrol later from your Profile">Skip for now</button>
+      </div>
+      <button class="btn btn-link text-ww mt-2" id="backBtn">← Back</button>
+    </div>
+  </div>
+  <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="/vendor/faceapi/face-api.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/face.js"></script>
+  <script>
+    const SAMPLES = 5;
+    let details = null;
+    const $ = (id) => document.getElementById(id);
+    WW.api('/api/config').then((c) => { $('domainHint').textContent = `Only @${c.email_domain} addresses can register.`; });
+
+    $('detailsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      details = Object.fromEntries(new FormData(e.target));
+      $('step1').classList.add('d-none');
+      $('step2').classList.remove('d-none');
+      try {
+        await Face.startCamera($('video'));
+        $('camMsg').textContent = 'Loading face models…';
+        await Face.load();
+        $('camMsg').textContent = 'Look straight at the camera, then press Start.';
+        $('captureBtn').disabled = false;
+      } catch (ex) {
+        $('camMsg').textContent = 'Camera not available';
+        $('err2').textContent = ex.message + ' You can skip and enrol later from your Profile.';
+        $('err2').classList.remove('d-none');
+      }
+    });
+    $('backBtn').addEventListener('click', () => {
+      Face.stopCamera($('video'));
+      $('step2').classList.add('d-none'); $('step1').classList.remove('d-none');
+    });
+
+    async function submit(descriptors) {
+      try {
+        await WW.api('/api/auth/register', { body: { ...details, descriptors } });
+        Face.stopCamera($('video'));
+        location.href = '/student?welcome=1';
+      } catch (ex) {
+        $('err2').textContent = ex.message; $('err2').classList.remove('d-none');
+        if (ex.status === 400 || ex.status === 409) {
+          if (!/face/i.test(ex.message)) { $('step2').classList.add('d-none'); $('step1').classList.remove('d-none'); $('err1').textContent = ex.message; $('err1').classList.remove('d-none'); }
+        }
+        $('captureBtn').disabled = false;
+      }
+    }
+    $('captureBtn').addEventListener('click', async () => {
+      $('captureBtn').disabled = true;
+      $('err2').classList.add('d-none');
+      try {
+        const samples = await Face.captureSamples($('video'), $('overlay'), SAMPLES, (n, msg) => {
+          $('bar').style.width = `${(n / SAMPLES) * 100}%`;
+          $('camMsg').textContent = msg;
+        });
+        $('camMsg').textContent = 'Saving…';
+        await submit(samples);
+      } catch (ex) {
+        $('err2').textContent = ex.message; $('err2').classList.remove('d-none');
+        $('captureBtn').disabled = false;
+      }
+    });
+    $('skipBtn').addEventListener('click', () => submit([]));
+  </script>
+</body>
+</html>

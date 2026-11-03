@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Mess · WasteWise</title>
+  <link rel="icon" href="/img/logo.svg">
+  <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- HOME -->
+  <section data-tab="home">
+    <div class="hero p-4 mb-3">
+      <div class="opacity-75">Hello,</div>
+      <div class="fs-3 fw-bold" id="hName">…</div>
+      <div class="opacity-75" id="hRoll"></div>
+    </div>
+    <div id="faceWarn" class="alert alert-warning d-none">Your face is not enrolled yet, so the gate scanner can't let you in. <a href="#" class="alert-link" data-goto="profile">Enrol now</a>.</div>
+    <div id="notices"></div>
+    <div class="d-flex align-items-center mb-2">
+      <h2 class="h5 fw-bold mb-0">Book meals</h2>
+      <button class="btn btn-sm btn-outline-ww ms-auto" id="bookAllBtn">Book all open meals</button>
+    </div>
+    <div class="chip-row mb-3" id="dayChips"></div>
+    <div id="leaveBanner" class="alert alert-light border d-none" style="color: var(--ww-purple)">You're on leave this day. Meals are skipped and not counted.</div>
+    <div id="mealList" class="d-grid gap-3"></div>
+    <p class="small-muted mt-3" id="cutoffNote"></p>
+  </section>
+
+  <!-- MENU -->
+  <section data-tab="menu" class="d-none">
+    <h2 class="h5 fw-bold mb-3">Weekly menu</h2>
+    <div id="menuList" class="d-grid gap-2"></div>
+  </section>
+
+  <!-- GREEN -->
+  <section data-tab="green" class="d-none">
+    <h2 class="h5 fw-bold mb-3">My meal stats</h2>
+    <div class="row g-2 mb-3" id="myStats"></div>
+    <div class="card p-3 mb-3">
+      <div class="fw-bold mb-2">Our mess, together</div>
+      <div class="row g-2 text-center" id="campusStats"></div>
+      <a href="/sustainability" class="btn btn-outline-ww btn-sm mt-3">Open the full sustainability dashboard</a>
+    </div>
+    <div class="card p-3">
+      <div class="fw-bold mb-2">Booking history</div>
+      <div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Date</th><th>Meal</th><th>Result</th></tr></thead><tbody id="historyRows"></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- GUEST -->
+  <section data-tab="guest" class="d-none">
+    <h2 class="h5 fw-bold mb-3">Guest pass</h2>
+    <div class="card p-3 mb-3">
+      <p class="small-muted mb-2">Bringing a visitor? Request a single-use QR pass. Guests pay per meal (<span id="guestPrice">₹80</span>) at the counter.</p>
+      <form id="guestForm" class="row g-2">
+        <div class="col-12"><input class="form-control" name="guest_name" placeholder="Guest's name" required></div>
+        <div class="col-6"><input class="form-control" type="date" name="date" required></div>
+        <div class="col-6"><select class="form-select" name="meal" id="guestMeal"></select></div>
+        <div class="col-12"><button class="btn btn-ww w-100">Create guest pass</button></div>
+      </form>
+    </div>
+    <div id="passList" class="d-grid gap-3"></div>
+  </section>
+
+  <!-- PROFILE -->
+  <section data-tab="profile" class="d-none">
+    <div class="card p-3 mb-3">
+      <div class="fw-bold fs-5">Profile</div>
+      <div class="small-muted" id="pEmail"></div>
+    </div>
+    <div class="card p-3 mb-3">
+      <div class="fw-bold mb-2">Student details</div>
+      <form id="profileForm">
+        <label class="form-label small">Name</label><input class="form-control mb-2" name="name" required>
+        <label class="form-label small">Roll number</label><input class="form-control mb-3" name="roll_no">
+        <details class="mb-3"><summary class="small text-ww">Change password</summary>
+          <input class="form-control mt-2" type="password" name="current_password" placeholder="Current password" autocomplete="current-password">
+          <input class="form-control mt-2" type="password" name="new_password" placeholder="New password (min 6)" autocomplete="new-password">
+        </details>
+        <button class="btn btn-ww w-100">Save profile</button>
+      </form>
+    </div>
+    <div class="card p-3 mb-3">
+      <div class="d-flex align-items-center"><div class="fw-bold">Face enrolment</div><span class="ms-auto" id="faceBadge"></span></div>
+      <p class="small-muted mb-2">Used by the gate scanner to recognise you. Re-scan if it has trouble matching you.</p>
+      <div id="enrolBox" class="d-none">
+        <div class="cam-wrap mb-2"><video id="video" muted playsinline></video><canvas id="overlay"></canvas><div class="cam-msg" id="camMsg">Starting camera…</div></div>
+        <div class="progress mb-2" style="height: 8px"><div class="progress-bar bg-success" id="bar" style="width: 0%"></div></div>
+      </div>
+      <button class="btn btn-outline-ww w-100" id="enrolBtn">Scan my face</button>
+    </div>
+    <div class="card p-3 mb-3" style="background: color-mix(in srgb, var(--ww-purple) 6%, var(--bs-body-bg))">
+      <div class="fw-bold" style="color: var(--ww-purple)">Skip meals / vacation</div>
+      <div class="small mb-2" style="color: var(--ww-purple)">Meals in this date range are auto-cancelled and the kitchen won't cook for you.</div>
+      <form id="leaveForm" class="row g-2">
+        <div class="col-6"><label class="form-label small">From</label><input type="date" class="form-control" name="from_date" required></div>
+        <div class="col-6"><label class="form-label small">To</label><input type="date" class="form-control" name="to_date" required></div>
+        <div class="col-12"><button class="btn w-100 text-white" style="background: var(--ww-purple)">Mark leave</button></div>
+      </form>
+      <div id="leaveList" class="mt-2"></div>
+    </div>
+    <div class="card p-3 mb-3">
+      <div class="fw-bold mb-2">Complaints & feedback</div>
+      <form id="complaintForm" class="d-grid gap-2">
+        <select class="form-select" name="category">
+          <option>Food quality</option><option>Hygiene</option><option>Booking</option><option>Face scanner</option><option>Staff</option><option>Suggestion</option><option>Other</option>
+        </select>
+        <textarea class="form-control" name="message" rows="3" placeholder="Describe the issue or idea" required></textarea>
+        <input class="form-control" type="file" name="photo" accept="image/*">
+        <button class="btn btn-ww">Submit</button>
+      </form>
+      <div id="complaintList" class="mt-3 d-grid gap-2"></div>
+    </div>
+    <div class="card p-3 mb-3">
+      <div class="fw-bold mb-1">Reminders</div>
+      <p class="small-muted mb-2">Get a pop-up when a booked meal is about to end or a booking is about to close (while this page is open).</p>
+      <button class="btn btn-outline-secondary w-100" id="notifBtn">Turn on notifications</button>
+    </div>
+    <button class="btn btn-outline-danger w-100" onclick="WW.logout()">Log out</button>
+  </section>
+</div>
+
+<nav class="bottom-nav">
+  <div class="inner">
+    <button data-nav="home" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+    <button data-nav="menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16M4 12h16M4 19h10"/></svg>Menu</button>
+    <button data-nav="green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 19c0-8 6-14 15-14 0 9-6 15-14 15M5 19c3-5 6-8 10-10"/></svg>Green</button>
+    <button data-nav="guest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v7M14 20h3"/></svg>Guest</button>
+    <button data-nav="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Profile</button>
+  </div>
+</nav>
+
+<script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="/vendor/faceapi/face-api.js"></script>
+<script src="/js/common.js"></script>
+<script src="/js/face.js"></script>
+<script src="/js/student.js"></script>
+</body>
+</html>

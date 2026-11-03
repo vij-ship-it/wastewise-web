@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BioScan Gate · WasteWise</title>
+  <link rel="icon" href="/img/logo.svg">
+  <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+  <style>
+    body { background: #050a07; color: #b8f5c8; font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; margin: 0; }
+    .top { display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid #12351f; flex-wrap: wrap; }
+    .logo { color: #2ecc71; font-weight: 800; letter-spacing: .12em; }
+    .sub { color: #5f9c72; font-size: .8rem; letter-spacing: .1em; }
+    .grid { display: grid; grid-template-columns: 1fr 360px; min-height: calc(100vh - 56px); }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .stage { position: relative; background: #000; overflow: hidden; }
+    .stage video, .stage canvas.overlay { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+    .scanlines { position: absolute; inset: 0; pointer-events: none;
+      background-image: linear-gradient(rgba(46,204,113,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(46,204,113,.08) 1px, transparent 1px);
+      background-size: 48px 48px; }
+    .corner { position: absolute; width: 48px; height: 48px; border: 4px solid #2ecc71; }
+    .c1 { top: 20px; left: 20px; border-right: 0; border-bottom: 0 } .c2 { top: 20px; right: 20px; border-left: 0; border-bottom: 0 }
+    .c3 { bottom: 20px; left: 20px; border-right: 0; border-top: 0 } .c4 { bottom: 20px; right: 20px; border-left: 0; border-top: 0 }
+    .result { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 60%; max-width: 90%; padding: 22px 28px; border: 3px solid; background: rgba(0,0,0,.78); text-align: center; display: none; }
+    .result.show { display: block; animation: pop .2s ease-out; }
+    @keyframes pop { from { transform: translate(-50%, -50%) scale(.9); opacity: 0 } }
+    .result .head { font-size: 2rem; font-weight: 800; letter-spacing: .08em; }
+    .result .who { font-size: 1.4rem; margin-top: 6px; }
+    .result .why { font-size: 1rem; margin-top: 8px; opacity: .9; }
+    .granted { border-color: #2ecc71; color: #2ecc71; } .denied { border-color: #ff5b4a; color: #ff7b6b; } .duplicate { border-color: #f5a623; color: #f5b84a; }
+    .status-bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 16px; background: rgba(0,0,0,.6); font-size: .95rem; }
+    .side { border-left: 1px solid #12351f; padding: 16px; display: flex; flex-direction: column; gap: 14px; background: #07120b; }
+    .panel { border: 1px solid #12351f; padding: 12px; }
+    .panel h6 { color: #5f9c72; letter-spacing: .12em; font-size: .75rem; margin-bottom: 8px; }
+    .log { font-size: .8rem; max-height: 42vh; overflow-y: auto; }
+    .log div { padding: 3px 0; border-bottom: 1px dashed #12351f; }
+    .ok { color: #2ecc71 } .bad { color: #ff7b6b } .warn { color: #f5b84a }
+    .btn-scan { background: #0f3b22; color: #b8f5c8; border: 1px solid #2ecc71; font-family: inherit; }
+    .btn-scan.active, .btn-scan:hover { background: #2ecc71; color: #04140a; }
+    select, input { font-family: inherit !important; }
+    .big-count { font-size: 2.4rem; font-weight: 800; color: #2ecc71; line-height: 1; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <span class="logo">◉ BIOSCAN PRO</span><span class="sub">WASTEWISE MESS GATE · FACIAL RECOGNITION SYSTEM v2</span>
+    <span class="ms-auto sub" id="clock"></span>
+    <a href="/admin" class="sub text-decoration-none">ADMIN ↗</a>
+  </div>
+
+  <div id="authBox" class="container py-5 d-none" style="max-width: 460px">
+    <div class="panel">
+      <h6>SCANNER NOT AUTHORISED</h6>
+      <p class="small">Log in as an admin on this laptop, or enter the scanner key (Admin → Settings) to run this as a dedicated gate device.</p>
+      <a class="btn btn-scan w-100 mb-3" href="/login?admin=1">Log in as admin</a>
+      <div class="input-group"><input class="form-control" id="keyInput" placeholder="Scanner key"><button class="btn btn-scan" id="keyBtn">Use key</button></div>
+    </div>
+  </div>
+
+  <div class="grid d-none" id="main">
+    <div class="stage" id="stage">
+      <video id="video" muted playsinline></video>
+      <canvas class="overlay" id="overlay"></canvas>
+      <div class="scanlines"></div>
+      <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+      <div class="result" id="result"><div class="head" id="rHead"></div><div class="who" id="rWho"></div><div class="why" id="rWhy"></div></div>
+      <div class="status-bar" id="statusBar">INITIALISING CAMERA…</div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h6>SESSION</h6>
+        <select class="form-select form-select-sm bg-black text-success border-success mb-2" id="mealSel"></select>
+        <input type="date" class="form-control form-control-sm bg-black text-success border-success mb-2 d-none" id="dateSel" title="Date for manual override">
+        <div class="small" id="sessionInfo"></div>
+      </div>
+      <div class="panel">
+        <h6>MODE</h6>
+        <div class="d-flex gap-2">
+          <button class="btn btn-scan btn-sm flex-fill active" data-mode="face">FACE</button>
+          <button class="btn btn-scan btn-sm flex-fill" data-mode="qr">GUEST QR</button>
+        </div>
+        <div class="input-group input-group-sm mt-2">
+          <input class="form-control bg-black text-success border-success" id="codeInput" placeholder="Type guest code">
+          <button class="btn btn-scan" id="codeBtn">CHECK</button>
+        </div>
+      </div>
+      <div class="panel d-flex gap-3">
+        <div><div class="big-count" id="cntIn">0</div><div class="sub">CHECKED IN</div></div>
+        <div><div class="big-count" style="color:#5f9c72" id="cntFaces">0</div><div class="sub">ENROLLED</div></div>
+      </div>
+      <div class="panel flex-fill">
+        <h6>SYSTEM LOG</h6>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="qrCanvas" class="d-none"></canvas>
+  <script src="/vendor/faceapi/face-api.js"></script>
+  <script src="/vendor/jsqr/jsQR.js"></script>
+  <script src="/js/face.js"></script>
+  <script src="/js/scanner.js"></script>
+</body>
+</html>

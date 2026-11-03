@@ -1,0 +1,26 @@
+{
+  "name": "wastewise-web",
+  "version": "1.0.0",
+  "description": "WasteWise Web: meal pre-booking, face-recognition mess entry and food-waste analytics that runs fully on a laptop",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server/index.js",
+    "seed": "node --disable-warning=ExperimentalWarning server/seed.js",
+    "reset": "node --disable-warning=ExperimentalWarning server/seed.js --reset",
+    "test": "node --disable-warning=ExperimentalWarning --test test/api.test.js"
+  },
+  "author": "WasteWise team, RVCE",
+  "license": "MIT",
+  "dependencies": {
+    "@vladmandic/face-api": "^1.7.15",
+    "bootstrap": "^5.3.8",
+    "chart.js": "^4.6.1",
+    "express": "^4.22.3",
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "private": true
+}

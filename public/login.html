@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log in · WasteWise</title>
+  <link rel="icon" href="/img/logo.svg">
+  <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <div class="container py-5" style="max-width: 440px">
+    <a href="/" class="d-flex align-items-center gap-2 mb-4 text-decoration-none text-body">
+      <img src="/img/logo.svg" width="36" height="36" alt=""><span class="brand fs-5">Waste<span class="text-ww">Wise</span> Web</span>
+    </a>
+    <div class="card p-4">
+      <ul class="nav nav-pills nav-fill mb-3" id="roleTabs">
+        <li class="nav-item"><button class="nav-link active" data-role="student">Student</button></li>
+        <li class="nav-item"><button class="nav-link" data-role="admin">Admin / Warden</button></li>
+      </ul>
+      <form id="loginForm">
+        <div class="mb-3">
+          <label class="form-label">College email</label>
+          <input class="form-control" type="email" name="email" placeholder="name@rvce.edu.in" required autocomplete="username">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input class="form-control" type="password" name="password" required autocomplete="current-password">
+        </div>
+        <div class="alert alert-danger d-none py-2" id="err"></div>
+        <button class="btn btn-ww w-100 py-2 fw-semibold" type="submit">Log in</button>
+      </form>
+      <div class="text-center mt-3 small" id="regLink">New here? <a href="/register" class="text-ww">Register with your college email</a></div>
+      <div class="text-center mt-3 small-muted d-none" id="adminHint">Default admin: admin@rvce.edu.in / admin123 (change it in Settings)</div>
+    </div>
+  </div>
+  <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/common.js"></script>
+  <script>
+    let role = new URLSearchParams(location.search).get('admin') ? 'admin' : 'student';
+    const tabs = document.querySelectorAll('#roleTabs button');
+    function setRole(r) {
+      role = r;
+      tabs.forEach((t) => t.classList.toggle('active', t.dataset.role === r));
+      document.getElementById('regLink').classList.toggle('d-none', r === 'admin');
+      document.getElementById('adminHint').classList.toggle('d-none', r !== 'admin');
+    }
+    tabs.forEach((t) => t.addEventListener('click', () => setRole(t.dataset.role)));
+    setRole(role);
+    WW.me().then((u) => { if (u) location.href = u.role === 'admin' ? '/admin' : '/student'; });
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = new FormData(e.target);
+      const err = document.getElementById('err');
+      err.classList.add('d-none');
+      try {
+        const { user } = await WW.api('/api/auth/login', { body: { email: f.get('email'), password: f.get('password'), role } });
+        location.href = user.role === 'admin' ? '/admin' : '/student';
+      } catch (ex) { err.textContent = ex.message; err.classList.remove('d-none'); }
+    });
+  </script>
+</body>
+</html>

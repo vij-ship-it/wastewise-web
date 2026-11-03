@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WasteWise Web</title>
+  <link rel="icon" href="/img/logo.svg">
+  <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <div class="container py-4" style="max-width: 1000px">
+    <div class="d-flex align-items-center gap-2 mb-4">
+      <img src="/img/logo.svg" width="40" height="40" alt="">
+      <div class="brand fs-4">Waste<span class="text-ww">Wise</span> Web</div>
+      <span class="ms-auto small-muted">RV College of Engineering · Mess</span>
+    </div>
+
+    <div class="hero p-4 p-md-5 mb-4">
+      <h1 class="fw-bold mb-2">Book your meals. Waste less food.</h1>
+      <p class="mb-4 opacity-75" style="max-width: 620px">Pre-book Breakfast, Lunch, Snacks and Dinner, walk in with a face scan, and see how much food our mess saves and turns into biogas.</p>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-light btn-lg fw-semibold" href="/login">Student login</a>
+        <a class="btn btn-outline-light btn-lg" href="/register">Register with college email</a>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-4">
+        <a class="card h-100 p-3 text-decoration-none text-body" href="/admin">
+          <div class="fw-bold mb-1">Admin / Warden dashboard</div>
+          <div class="small-muted">Live headcount, expected vs actual, waste log, guests, complaints and reports.</div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a class="card h-100 p-3 text-decoration-none text-body" href="/scanner">
+          <div class="fw-bold mb-1">Gate face scanner</div>
+          <div class="small-muted">Run this on the laptop at the mess entrance. Uses the webcam to check students in.</div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a class="card h-100 p-3 text-decoration-none text-body" href="/sustainability">
+          <div class="fw-bold mb-1">Public sustainability dashboard</div>
+          <div class="small-muted">Food waste, biogas generated and slurry used. Open to everyone, no login.</div>
+        </a>
+      </div>
+    </div>
+    <p class="small-muted text-center mt-4">Runs entirely on this laptop. No data leaves this computer.</p>
+  </div>
+  <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/common.js"></script>
+</body>
+</html>

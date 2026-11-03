@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Dashboard · WasteWise</title>
+  <link rel="icon" href="/img/logo.svg">
+  <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="admin-wrap">
+  <aside class="admin-side">
+    <div class="side-title d-flex align-items-center gap-2 px-2 mb-3">
+      <img src="/img/logo.svg" width="30" height="30" alt=""><span class="brand text-white">Waste<span class="leaf">Wise</span></span>
+    </div>
+    <button class="nav-link active" data-tab="live">Live headcount</button>
+    <button class="nav-link" data-tab="bookings">Bookings</button>
+    <button class="nav-link" data-tab="guests">Guest passes</button>
+    <button class="nav-link" data-tab="waste">Waste & biogas</button>
+    <button class="nav-link" data-tab="announce">Announcements</button>
+    <button class="nav-link" data-tab="complaints">Complaints <span class="badge text-bg-danger d-none" id="cBadge"></span></button>
+    <button class="nav-link" data-tab="menu">Weekly menu</button>
+    <button class="nav-link" data-tab="analytics">Analytics</button>
+    <button class="nav-link" data-tab="reports">Reports</button>
+    <button class="nav-link" data-tab="students">Students</button>
+    <button class="nav-link" data-tab="settings">Settings</button>
+    <div class="side-foot mt-4 px-2 d-grid gap-2">
+      <a class="btn btn-sm btn-outline-light" href="/scanner" target="_blank">Open gate scanner ↗</a>
+      <a class="btn btn-sm btn-outline-light" href="/sustainability" target="_blank">Public dashboard ↗</a>
+      <button class="btn btn-sm btn-outline-danger" onclick="WW.logout()">Log out</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <!-- LIVE -->
+    <section data-sec="live">
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="h4 fw-bold mb-0"><span class="live-dot"></span>Live headcount</h1>
+        <span class="small-muted" id="curMeal"></span>
+        <input type="date" class="form-control form-control-sm ms-auto" style="width: 170px" id="liveDate">
+      </div>
+      <div class="row g-3 mb-3" id="liveTop"></div>
+      <div class="row g-3 mb-3" id="mealCards"></div>
+      <div class="row g-3">
+        <div class="col-lg-7"><div class="card p-3 h-100"><div class="fw-bold mb-2">Expected vs actual</div><div class="chart-box"><canvas id="liveChart"></canvas></div></div></div>
+        <div class="col-lg-5">
+          <div class="card p-3 mb-3">
+            <div class="fw-bold mb-2">Manual check-in</div>
+            <p class="small-muted mb-2">For students who forgot to book or whose face isn't matching.</p>
+            <form id="checkinForm" class="row g-2">
+              <div class="col-12"><input class="form-control form-control-sm" name="who" placeholder="Roll number or college email" required></div>
+              <div class="col-6"><select class="form-select form-select-sm meal-select" name="meal"></select></div>
+              <div class="col-6 d-flex align-items-center"><div class="form-check small"><input class="form-check-input" type="checkbox" name="add_booking" id="addB" checked><label class="form-check-label" for="addB">Add booking</label></div></div>
+              <div class="col-12"><button class="btn btn-ww btn-sm w-100">Check in</button></div>
+            </form>
+          </div>
+          <div class="card p-3"><div class="fw-bold mb-2">Recent gate scans</div><div id="scanList" class="small" style="max-height: 300px; overflow-y: auto"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOOKINGS -->
+    <section data-sec="bookings" class="d-none">
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <h1 class="h4 fw-bold mb-0">Bookings</h1>
+        <input type="date" class="form-control form-control-sm ms-auto" style="width: 170px" id="bDate">
+        <select class="form-select form-select-sm meal-select" style="width: 140px" id="bMeal"></select>
+      </div>
+      <div class="card p-3"><div id="bSummary" class="mb-2"></div><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Name</th><th>Roll no</th><th>Email</th><th>Checked in</th></tr></thead><tbody id="bRows"></tbody></table></div><div id="bWalkins"></div></div>
+    </section>
+
+    <!-- GUESTS -->
+    <section data-sec="guests" class="d-none">
+      <h1 class="h4 fw-bold mb-3">Guest passes & payments</h1>
+      <div class="row g-3 mb-3" id="gTop"></div>
+      <div class="card p-3"><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Date</th><th>Meal</th><th>Guest</th><th>Requested by</th><th>Code</th><th>Status</th><th>Payment</th><th></th></tr></thead><tbody id="gRows"></tbody></table></div></div>
+    </section>
+
+    <!-- WASTE -->
+    <section data-sec="waste" class="d-none">
+      <h1 class="h4 fw-bold mb-3">Waste log, biogas & slurry</h1>
+      <div class="row g-3 mb-3" id="wTop"></div>
+      <div class="row g-3">
+        <div class="col-lg-5">
+          <div class="card p-3 mb-3">
+            <div class="fw-bold mb-2">Daily waste entry</div>
+            <form id="wasteForm" class="row g-2">
+              <div class="col-6"><label class="form-label small">Date</label><input type="date" class="form-control form-control-sm" name="date" required></div>
+              <div class="col-6"><label class="form-label small">Meal</label><select class="form-select form-select-sm meal-select" name="meal"></select></div>
+              <div class="col-4"><label class="form-label small">Cooked (kg)</label><input type="number" step="0.1" min="0" class="form-control form-control-sm" name="prepared_kg"></div>
+              <div class="col-4"><label class="form-label small">Wasted (kg)</label><input type="number" step="0.1" min="0" class="form-control form-control-sm" name="wasted_kg" required></div>
+              <div class="col-4"><label class="form-label small">To biogas (kg)</label><input type="number" step="0.1" min="0" class="form-control form-control-sm" name="sent_to_biogas_kg" placeholder="= wasted"></div>
+              <div class="col-12"><input class="form-control form-control-sm" name="notes" placeholder="Notes (optional)"></div>
+              <div class="col-12"><div class="small-muted" id="wHint"></div></div>
+              <div class="col-12"><button class="btn btn-ww btn-sm w-100">Save waste log</button></div>
+            </form>
+          </div>
+          <div class="card p-3">
+            <div class="fw-bold mb-2">Agricultural slurry usage</div>
+            <form id="slurryForm" class="row g-2">
+              <div class="col-6"><input type="date" class="form-control form-control-sm" name="date" required></div>
+              <div class="col-6"><input type="number" step="0.1" min="0" class="form-control form-control-sm" name="quantity_kg" placeholder="Quantity (kg)" required></div>
+              <div class="col-12"><input class="form-control form-control-sm" name="used_for" placeholder="Used for (e.g. campus garden)" required></div>
+              <div class="col-12"><button class="btn btn-ww btn-sm w-100">Log slurry</button></div>
+            </form>
+            <div class="table-responsive mt-2"><table class="table table-sm small mb-0"><tbody id="sRows"></tbody></table></div>
+          </div>
+        </div>
+        <div class="col-lg-7"><div class="card p-3">
+          <div class="fw-bold mb-2">Waste log & biogas tracker</div>
+          <div class="table-responsive" style="max-height: 640px"><table class="table table-sm small"><thead><tr><th>Date</th><th>Meal</th><th>Cooked</th><th>Wasted</th><th>To biogas</th><th>Biogas (m³)</th><th>Cumulative (m³)</th><th></th></tr></thead><tbody id="wRows"></tbody></table></div>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- ANNOUNCEMENTS -->
+    <section data-sec="announce" class="d-none">
+      <h1 class="h4 fw-bold mb-3">Announcements</h1>
+      <div class="row g-3">
+        <div class="col-lg-5"><div class="card p-3">
+          <form id="annForm" class="d-grid gap-2">
+            <select class="form-select" name="kind"><option value="info">General info</option><option value="special">Special meal</option><option value="menu">Menu change</option><option value="closure">Mess closure</option><option value="warning">Warning</option></select>
+            <input class="form-control" name="title" placeholder="Title" required>
+            <textarea class="form-control" name="body" rows="4" placeholder="Message to all students" required></textarea>
+            <button class="btn btn-ww">Send to all students</button>
+            <div class="small-muted">Students see it on their home page and get a pop-up notification if they turned reminders on.</div>
+          </form>
+        </div></div>
+        <div class="col-lg-7"><div id="annList" class="d-grid gap-2"></div></div>
+      </div>
+    </section>
+
+    <!-- COMPLAINTS -->
+    <section data-sec="complaints" class="d-none">
+      <h1 class="h4 fw-bold mb-3">Complaints & feedback</h1>
+      <div id="compList" class="d-grid gap-2"></div>
+    </section>
+
+    <!-- MENU -->
+    <section data-sec="menu" class="d-none">
+      <div class="d-flex align-items-center mb-3"><h1 class="h4 fw-bold mb-0">Weekly menu</h1><button class="btn btn-ww btn-sm ms-auto" id="saveMenu">Save menu</button></div>
+      <div class="card p-3"><div class="table-responsive"><table class="table table-sm align-top"><thead id="menuHead"></thead><tbody id="menuBody"></tbody></table></div></div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section data-sec="analytics" class="d-none">
+      <div class="d-flex align-items-center mb-3"><h1 class="h4 fw-bold mb-0">Analytics</h1>
+        <select class="form-select form-select-sm ms-auto" style="width: 150px" id="aDays"><option value="7">Last 7 days</option><option value="14">Last 14 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select></div>
+      <div class="row g-3">
+        <div class="col-lg-6"><div class="card p-3"><div class="fw-bold">Meal-wise attendance trends</div><div class="chart-box"><canvas id="aTrend"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card p-3"><div class="fw-bold">Expected vs actual (daily)</div><div class="chart-box"><canvas id="aExp"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card p-3"><div class="fw-bold">Waste reduction over time</div><div class="chart-box"><canvas id="aWaste"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card p-3"><div class="fw-bold">No-show rate by weekday & meal</div><div class="chart-box"><canvas id="aNoShow"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card p-3"><div class="fw-bold">Guest meal frequency</div><div class="chart-box"><canvas id="aGuests"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card p-3"><div class="fw-bold mb-2">Students with most no-shows</div><div class="table-responsive"><table class="table table-sm small"><thead><tr><th>Name</th><th>Roll no</th><th>No-shows</th><th>Booked</th><th>Rate</th></tr></thead><tbody id="aTop"></tbody></table></div></div></div>
+      </div>
+    </section>
+
+    <!-- REPORTS -->
+    <section data-sec="reports" class="d-none">
+      <h1 class="h4 fw-bold mb-3">Weekly & monthly reports</h1>
+      <div class="card p-3" style="max-width: 640px">
+        <div class="d-flex gap-2 mb-3"><button class="btn btn-outline-ww" id="rWeek">Last 7 days</button><button class="btn btn-outline-ww" id="rMonth">Last 30 days</button></div>
+        <div class="row g-2 mb-3"><div class="col"><label class="form-label small">From</label><input type="date" class="form-control" id="rFrom"></div><div class="col"><label class="form-label small">To</label><input type="date" class="form-control" id="rTo"></div></div>
+        <div class="d-flex gap-2"><button class="btn btn-ww" id="rOpen">Open printable report</button><button class="btn btn-outline-secondary" id="rCsv">Download CSV</button></div>
+        <p class="small-muted mt-3 mb-0">The printable report has meal-wise attendance, expected vs actual, waste and sustainability totals. Use your browser's Print → Save as PDF to share it.</p>
+      </div>
+    </section>
+
+    <!-- STUDENTS -->
+    <section data-sec="students" class="d-none">
+      <div class="d-flex align-items-center mb-3"><h1 class="h4 fw-bold mb-0">Students</h1><input class="form-control form-control-sm ms-auto" style="width: 240px" id="stSearch" placeholder="Search name / roll / email"></div>
+      <div class="card p-3"><div class="table-responsive"><table class="table table-sm small"><thead><tr><th>Name</th><th>Roll no</th><th>Email</th><th>Face</th><th>Booked</th><th>Attended</th><th>No-shows</th><th></th></tr></thead><tbody id="stRows"></tbody></table></div></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section data-sec="settings" class="d-none">
+      <h1 class="h4 fw-bold mb-3">Settings</h1>
+      <form id="setForm" class="row g-3" style="max-width: 900px">
+        <div class="col-lg-6"><div class="card p-3 h-100"><div class="fw-bold mb-2">Meal timings</div><div id="setTimes"></div></div></div>
+        <div class="col-lg-6"><div class="card p-3 h-100"><div class="fw-bold mb-2">Booking rules</div>
+          <label class="form-label small">Booking closes this many hours before a meal</label><input class="form-control form-control-sm mb-2" type="number" step="0.5" min="0" name="booking_cutoff_hours">
+          <label class="form-label small">Students can book this many days ahead</label><input class="form-control form-control-sm mb-2" type="number" min="1" max="14" name="booking_days_ahead">
+          <label class="form-label small">Allowed email domain</label><input class="form-control form-control-sm mb-2" name="email_domain">
+          <label class="form-label small">Guest meal price (₹)</label><input class="form-control form-control-sm" type="number" min="0" name="guest_price">
+        </div></div>
+        <div class="col-lg-6"><div class="card p-3 h-100"><div class="fw-bold mb-2">Sustainability factors</div>
+          <label class="form-label small">Food per plate (kg), for leftover estimates</label><input class="form-control form-control-sm mb-2" type="number" step="0.01" min="0" name="plate_kg">
+          <label class="form-label small">Biogas per kg of food waste (m³)</label><input class="form-control form-control-sm mb-2" type="number" step="0.01" min="0" name="biogas_m3_per_kg">
+          <label class="form-label small">Slurry per kg digested (kg)</label><input class="form-control form-control-sm mb-2" type="number" step="0.01" min="0" name="slurry_kg_per_kg">
+          <label class="form-label small">CO₂e avoided per kg diverted (kg)</label><input class="form-control form-control-sm" type="number" step="0.1" min="0" name="co2e_kg_per_kg">
+        </div></div>
+        <div class="col-lg-6"><div class="card p-3 h-100"><div class="fw-bold mb-2">Face scanner & hardware</div>
+          <label class="form-label small">Face match threshold (lower = stricter, 0.4 to 0.6)</label><input class="form-control form-control-sm mb-2" type="number" step="0.01" min="0.3" max="0.7" name="face_match_threshold">
+          <label class="form-label small">Scanner key (for a separate gate device or IR sensor)</label><input class="form-control form-control-sm mb-2" name="scanner_key">
+          <div class="small-muted mb-2">IR sensor test (simulates a beam break at the door):</div>
+          <div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-secondary" data-ir="in">+1 IN</button><button type="button" class="btn btn-sm btn-outline-secondary" data-ir="out">+1 OUT</button></div>
+        </div></div>
+        <div class="col-12 d-flex gap-2"><button class="btn btn-ww">Save settings</button></div>
+      </form>
+      <div class="card p-3 mt-3" style="max-width: 900px">
+        <div class="fw-bold mb-2">Change admin password</div>
+        <form id="pwForm" class="row g-2"><div class="col-md-5"><input type="password" class="form-control form-control-sm" name="current_password" placeholder="Current password" required></div><div class="col-md-5"><input type="password" class="form-control form-control-sm" name="new_password" placeholder="New password" minlength="6" required></div><div class="col-md-2"><button class="btn btn-sm btn-ww w-100">Change</button></div></form>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="/vendor/chart/chart.umd.min.js"></script>
+<script src="/js/common.js"></script>
+<script src="/js/admin.js"></script>
+</body>
+</html>
